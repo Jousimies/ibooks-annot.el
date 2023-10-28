@@ -1,13 +1,13 @@
 (require 'denote nil t)
 
+(defun ibooks-db/get-sqlite (directory sub-dir pattern)
+  "Get a list of database file names in DIRECTORY matching the given PATTERN."
+  (let ((file-names '()))
+    (dolist (file (directory-files (expand-file-name sub-dir directory) nil pattern))
+      (push (expand-file-name (concat directory sub-dir file)) file-names))
+    file-names))
+
 (defconst IBOOKS-DATA "~/Library/Containers/com.apple.iBooksX/Data/Documents/")
-(defvar *ibooks-db* (make-hash-table :test 'equal))
-(defvar ibooks-annot/book-alist nil)
-(defvar ibooks-annot/books-location (expand-file-name "~/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/"))
-(defvar ibooks-annot/book-note-highlights-heading "Annotations Extracted")
-(defvar ibooks-annot/book-note-directory "~/org")
-(defvar pdfannots "~/.emacs.d/packages/pdfannots/pdfannots.py -f json")
-(defvar ibooks-annot/python-command "/usr/bin/python3")
 (defconst ibooks-db/ANNOTATIONS-QUERY
   "SELECT ZANNOTATIONASSETID AS assetId,
           ZANNOTATIONSELECTEDTEXT AS quote,
@@ -26,15 +26,32 @@
   "SELECT ZASSETID AS id, ZTITLE AS title, ZAUTHOR AS author
    FROM ZBKLIBRARYASSET")
 
-(defun ibooks-db/get-sqlite (directory sub-dir pattern)
-  "Get a list of database file names in DIRECTORY matching the given PATTERN."
-  (let ((file-names '()))
-    (dolist (file (directory-files (expand-file-name sub-dir directory) nil pattern))
-      (push (expand-file-name (concat directory sub-dir file)) file-names))
-    file-names))
+(defvar *ibooks-db* (make-hash-table :test 'equal)
+  "A hash table to store iBooks database information.")
 
-(defvar ibooks-annot/BKLibrary-DB (ibooks-db/get-sqlite IBOOKS-DATA "BKLibrary/" "BKLibrary.*\\.sqlite$"))
-(defvar ibooks-annot/AEAnnotation-DB (ibooks-db/get-sqlite IBOOKS-DATA "AEAnnotation/" "AEAnnotation.*\\.sqlite$"))
+(defvar ibooks-annot/book-alist nil
+  "A list to store iBooks name and ID extract from database.")
+
+(defvar ibooks-annot/books-location (expand-file-name "~/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/")
+  "The location of iBooks documents system.")
+
+(defvar ibooks-annot/book-note-highlights-heading "Annotations Extracted"
+  "The heading used for extracted annotations book note.")
+
+(defvar ibooks-annot/book-note-directory "~/org"
+  "The directory where book note are stored.")
+
+(defvar pdfannots-script nil
+  "A variable to store pdfannot shell command, if applicable.")
+
+(defvar ibooks-annot/python-command "/usr/bin/python3"
+  "The path to the Python 3 executable on system.")
+
+(defvar ibooks-annot/BKLibrary-DB (ibooks-db/get-sqlite IBOOKS-DATA "BKLibrary/" "BKLibrary.*\\.sqlite$")
+  "The database for iBooks library information.")
+
+(defvar ibooks-annot/AEAnnotation-DB (ibooks-db/get-sqlite IBOOKS-DATA "AEAnnotation/" "AEAnnotation.*\\.sqlite$")
+  "The database for iBooks annotations information.")
 
 (defun ibooks-db/open (dbname)
   (or (gethash dbname *ibooks-db*)
@@ -159,7 +176,7 @@
   "Extract PDF highlights for the given BOOK-TITLE."
   (let* ((book-path (ibooks-annot/get-book-path-in-cloud book-title))
          (parsed-json (shell-command-to-string
-                       (format "%s %s %s" ibooks-annot/python-command pdfannots (shell-quote-argument book-path))))
+                       (format "%s %s %s" ibooks-annot/python-command pdfannots-script (shell-quote-argument book-path))))
          (highlights (ibooks-annot/parse-pdf-highlights parsed-json)))
     (ibooks-annot/write-highlights-to-note book-title book-note highlights)))
 
@@ -208,6 +225,8 @@
          (book-ext (ibooks-annot/get-book-extension book-title)))
     (when book-id
       (cond ((string= book-ext "epub") (ibooks-annot/extract-epub-highlights book-id book-title book-note))
-            ((string= book-ext "pdf") (ibooks-annot/extract-pdf-highlights book-title book-note))))))
+            ((string= book-ext "pdf") (if pdfannots-script
+                                          (ibooks-annot/extract-pdf-highlights book-title book-note)
+                                        (message "Install pdfannots first!")))))))
 
 (provide 'ibooks-annot)
