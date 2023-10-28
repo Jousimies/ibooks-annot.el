@@ -1,7 +1,39 @@
+;;; ibooks-annot.el --- Extract annotations from Apple books -*- lexical-binding: t -*-
+
+;; Author: Jousimies <duan_n@outlook.com>
+;; Maintainer: Jousimies <duan_n@outlook.com>
+;; URL: https://github.com/Jousimies/ibooks-annot.el
+;; Package-Requires: ((emacs "28.1") (denote "2.0.0") (org "9.6.10") (json "1.5"))
+;; Copyright (C) 2023, Jousimies, all rights reserved.
+;; Created: 2023-10-27
+;; Last-Updated: 2023-10-28T22:47:35+08:00
+
+;; This file is NOT part of GNU Emacs.
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Code:
+
 (require 'denote nil t)
+(require 'cl-seq nil t)
+(require 'org nil t)
+(require 'json nil t)
 
 (defun ibooks-db/get-sqlite (directory sub-dir pattern)
-  "Get a list of database file names in DIRECTORY matching the given PATTERN."
+  "Get a list of database in SUB-DIR of DIRECTORY matching the PATTERN."
   (let ((file-names '()))
     (dolist (file (directory-files (expand-file-name sub-dir directory) nil pattern))
       (push (expand-file-name (concat directory sub-dir file)) file-names))
@@ -111,7 +143,7 @@
     note))
 
 (defun ibooks-annot/update-book-alist ()
-  "Update ibooks-annot/book-alist with book titles and IDs from the database."
+  "Update `ibooks-annot/book-alist' with book titles and IDs from the database."
   (setq ibooks-annot/book-alist
         (mapcar (lambda (book)
                   (cons (cadr book) (car book)))
@@ -140,14 +172,14 @@
     (insert text)))
 
 (defun ibooks-annot/get-bookname-extension (directory)
-  "Get a list of cons cells containing file names and their extensions in the given DIRECTORY."
+  "Get a list of cons cells containing file names and extensions in `DIRECTORY'."
   (let ((files (directory-files directory nil "^[^.].*")))
     (mapcar (lambda (file)
               (cons (file-name-sans-versions file) (file-name-extension file)))
             files)))
 
 (defun ibooks-annot/bookname-partial-match (str1 str2)
-  "Check if str1 is a partial match of str2."
+  "Check if `STR1' is a partial match of `STR2'."
   (string-match-p (regexp-quote str1) str2))
 
 (defun ibooks-annot/get-book-extension (book-title)
@@ -173,7 +205,7 @@
         (ibooks-annot/write-to-note book-title book-note)))))
 
 (defun ibooks-annot/extract-pdf-highlights (book-title book-note)
-  "Extract PDF highlights for the given BOOK-TITLE."
+  "Extract PDF highlight for the given `BOOK-TITLE' and write to `BOOK-NOTE'."
   (let* ((book-path (ibooks-annot/get-book-path-in-cloud book-title))
          (parsed-json (shell-command-to-string
                        (format "%s %s %s" ibooks-annot/python-command pdfannots-script (shell-quote-argument book-path))))
@@ -181,7 +213,7 @@
     (ibooks-annot/write-highlights-to-note book-title book-note highlights)))
 
 (defun ibooks-annot/parse-pdf-highlights (json-data)
-  "Parse JSON data and return a list of highlights."
+  "Parse `JSON-DATA' and return a list of highlight."
   (let ((highlights '()))
     (with-temp-buffer
       (let ((json-object-type 'hash-table))
@@ -191,13 +223,13 @@
       (nreverse highlights))))
 
 (defun ibooks-annot/format-highlight (entry)
-  "Format a single highlight entry."
+  "Format a single highlight `ENTRY'."
   (let ((color (ibooks-annot/pdf-highlights-color (gethash "color" entry)))
         (text (gethash "text" entry)))
     (format "%s%s%s\n" color text color)))
 
 (defun ibooks-annot/write-highlights-to-note (book-title book-note highlights)
-  "Write highlights to the note for the given BOOK-TITLE."
+  "Write `Highlight' to `BOOK-NOTE' for the given `BOOK-TITLE'."
   (with-temp-buffer
     (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
     (dolist (highlight highlights)
@@ -205,7 +237,8 @@
     (ibooks-annot/write-to-note book-title book-note)))
 
 (defun ibooks-annot/write-to-note (book-title book-note)
-  "Write the buffer content to a note or create a new one if needed."
+  "Write the buffer content to `BOOK-NOTE'.
+Create a new note with `BOOK-TITLE' if needed."
   (if book-note
       (progn
         (ibooks-annot/remove-heading-in-note ibooks-annot/book-note-highlights-heading book-note)
@@ -230,3 +263,5 @@
                                         (message "Install pdfannots first!")))))))
 
 (provide 'ibooks-annot)
+
+;;; ibooks-annot.el ends here
