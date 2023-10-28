@@ -78,8 +78,6 @@
           (setq note file)))
     note))
 
-(defvar ibooks-annot/book-note-hook nil)
-
 (defvar *ibooks-annot/book-alist* nil)
 
 (defun ibooks-annot/choose-book (BKLibrary-db AEAnnotation-DB)
