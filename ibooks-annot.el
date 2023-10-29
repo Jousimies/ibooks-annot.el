@@ -85,6 +85,21 @@
 (defvar ibooks-annot/AEAnnotation-DB (ibooks-db/get-sqlite IBOOKS-DATA "AEAnnotation/" "AEAnnotation.*\\.sqlite$")
   "The database for iBooks annotations information.")
 
+(defvar ibooks-annot/highlights-color-list '((1 . "#7cc867")
+                                             (2 . "#69aff0")
+                                             (3 . "#f9cd59")
+                                             (4 . "#fb5b89"))
+  "This list specifies four different colors for highlighting various types of content.
+Use the associated numbers for different purposes:
+- 1: Normal knowledge
+- 2: Original sources
+- 3: Questions
+- 4: Imported knowledge.
+
+The colors were extract from pdf by pdfannots. Please adjust it according to you content.
+Execute shell command `python3 pdfannot.py -f json xxx.pdf',
+check the output json file to find color value.")
+
 (defun ibooks-db/open (dbname)
   (or (gethash dbname *ibooks-db*)
       (setf (gethash dbname *ibooks-db*) (sqlite-open dbname))))
@@ -117,21 +132,31 @@
   "Get the number of annotations for a book with BOOK-ID."
   (length (ibooks-annot/get-book-highlights book-id)))
 
-(defun ibooks-annot/book-highlights-color (num)
+(defun ibooks-annot/code-to-symbol (code)
   (cond
-   ((= num 1) "~")
-   ((= num 2) "=")
-   ((= num 3) "/")
-   ((= num 4) "*")
+   ((= code 1) "~")
+   ((= code 2) "=")
+   ((= code 3) "/")
+   ((= code 4) "*")
    (t "")))
 
-(defun ibooks-annot/pdf-highlights-color (num)
-  (cond
-   ((string= num "#fb5b89") "*")
-   ((string= num "#69aff0") "=")
-   ((string= num "#7cc867") "~")
-   ((string= num "#f9cd59") "/")
-   (t "")))
+(defun ibooks-annot/color-to-symbol (color)
+  (let ((code (car (rassoc color ibooks-annot/highlights-color-list))))
+    (ibooks-annot/code-to-symbol code)))
+
+(defun ibooks-annot/highlights-color (colorcode)
+    "Return a character corresponding to `COLORCODE'.
+
+If COLORCODE  is a number (1-4), the function returns the character
+'~', '=', '/', or '*'.
+
+If COLORCODE is a color string, the function returns the
+   corresponding character from the `custom-highlights-list'.
+
+If neither condition is met, an empty string is returned."
+  (if (numberp colorcode)
+      (ibooks-annot/code-to-symbol colorcode)
+    (ibooks-annot/color-to-symbol colorcode)))
 
 (defun ibooks-annot/book-note-exist-p (title)
   "Check if a book note with TITLE exists in the denote directory."
@@ -199,7 +224,7 @@
       (when highlights
         (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
         (dolist (annot highlights)
-          (let ((symbol (ibooks-annot/book-highlights-color (nth 4 annot)))
+          (let ((symbol (ibooks-annot/highlights-color (nth 4 annot)))
                 (text (cadr annot)))
             (insert (format "%s%s%s\n" symbol text symbol))))
         (ibooks-annot/write-to-note book-title book-note)))))
@@ -224,7 +249,7 @@
 
 (defun ibooks-annot/format-highlight (entry)
   "Format a single highlight `ENTRY'."
-  (let ((color (ibooks-annot/pdf-highlights-color (gethash "color" entry)))
+  (let ((color (ibooks-annot/highlights-color (gethash "color" entry)))
         (text (gethash "text" entry)))
     (format "%s%s%s\n" color text color)))
 
