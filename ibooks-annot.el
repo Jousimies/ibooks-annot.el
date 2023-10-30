@@ -85,7 +85,8 @@
 (defvar ibooks-annot/AEAnnotation-DB (ibooks-db/get-sqlite IBOOKS-DATA "AEAnnotation/" "AEAnnotation.*\\.sqlite$")
   "The database for iBooks annotations information.")
 
-(defvar ibooks-annot/highlights-color-list '((1 . "#7cc867")
+(defvar ibooks-annot/highlights-color-list '((0 . "#eb2813")
+                                             (1 . "#7cc867")
                                              (2 . "#69aff0")
                                              (3 . "#f9cd59")
                                              (4 . "#fb5b89"))
