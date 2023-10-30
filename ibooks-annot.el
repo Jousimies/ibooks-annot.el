@@ -246,6 +246,7 @@ If neither condition is met, an empty string is returned."
     (with-temp-buffer
       (let ((json-object-type 'hash-table))
         (mapc (lambda (entry)
+                (message "%s" (cons (ibooks-annot/format-highlight entry) highlights))
                 (setq highlights (cons (ibooks-annot/format-highlight entry) highlights)))
               (json-read-from-string json-data)))
       (nreverse highlights))))
@@ -253,8 +254,11 @@ If neither condition is met, an empty string is returned."
 (defun ibooks-annot/format-highlight (entry)
   "Format a single highlight `ENTRY'."
   (let ((color (ibooks-annot/highlights-color (gethash "color" entry)))
-        (text (gethash "text" entry)))
-    (format "%s%s%s\n" color text color)))
+        (text (gethash "text" entry))
+        (contents (gethash "contents" entry)))
+    (if contents
+        (format "%s%s%s\n# %s\n" color text color contents)
+      (format "%s%s%s\n" color text color))))
 
 (defun ibooks-annot/write-highlights-to-note (book-title book-note highlights)
   "Write `Highlight' to `BOOK-NOTE' for the given `BOOK-TITLE'."
