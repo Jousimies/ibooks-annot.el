@@ -1,6 +1,6 @@
 # ibooks-annot.el
 
-iBooks-Annot.el 用于提取 Apple Books 中书籍的高亮信息，并将它们保存到 Denote 笔记中。
+[WIP] iBooks-Annot.el 用于提取 Apple Books 中书籍的高亮信息，并将它们保存到 Denote 笔记中。
 
 目前支持 epub 和 PDF 文件 Highlights 的提取。
 
@@ -26,3 +26,7 @@ git submodule add --depth=1 https://github.com/Jousimies/ibooks-annot.el.git
 ``` emacs-lisp
 (setq pdfannots-script "/path-to-pdfannots/pdfannots.py -f json")
 ```
+
+## TODO
+- [X] 提取 highlights
+- [X] 提取 highlights 中的 Comments
