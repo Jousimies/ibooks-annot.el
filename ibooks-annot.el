@@ -225,8 +225,11 @@ If neither condition is met, an empty string is returned."
         (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
         (dolist (annot highlights)
           (let ((symbol (ibooks-annot/highlights-color (nth 4 annot)))
-                (text (cadr annot)))
-            (insert (format "%s%s%s\n" symbol text symbol))))
+                (highlight (cadr annot))
+                (comment (caddr annot)))
+            (insert (format "%s%s%s\n" symbol highlight symbol))
+            (when comment
+              (insert (format "# %s%s%s\n" symbol comment symbol)))))
         (ibooks-annot/write-to-note book-title book-note)))))
 
 (defun ibooks-annot/extract-pdf-highlights (book-title book-note)
