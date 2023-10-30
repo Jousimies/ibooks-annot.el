@@ -134,6 +134,7 @@ check the output json file to find color value.")
 
 (defun ibooks-annot/code-to-symbol (code)
   (cond
+   ((= code 0) "_")
    ((= code 1) "~")
    ((= code 2) "=")
    ((= code 3) "/")
