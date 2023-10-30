@@ -216,7 +216,7 @@ If neither condition is met, an empty string is returned."
          (ext (cl-assoc book-title book-and-ext :test #'ibooks-annot/bookname-partial-match)))
     (expand-file-name (car ext) ibooks-annot/books-location)))
 
-(defun ibooks-annot/extract-epub-highlights (book-id book-title book-note)
+(defun ibooks-annot/extract-epub-annotations (book-id book-title book-note)
   (let* ((highlights (ibooks-annot/get-book-highlights book-id)))
     (ibooks-db/close (car ibooks-annot/AEAnnotation-DB)) ;close AEANNOTATION-DB after extract highlights
     (with-temp-buffer
@@ -231,25 +231,23 @@ If neither condition is met, an empty string is returned."
               (insert (format "# %s\n" comment)))))
         (ibooks-annot/write-to-note book-title book-note)))))
 
-(defun ibooks-annot/extract-pdf-highlights (book-title book-note)
+(defun ibooks-annot/extract-pdf-annotations (book-title book-note)
   "Extract PDF highlight for the given `BOOK-TITLE' and write to `BOOK-NOTE'."
   (let* ((book-path (ibooks-annot/get-book-path-in-cloud book-title))
          (parsed-json (shell-command-to-string
                        (format "%s %s %s" ibooks-annot/python-command pdfannots-script (shell-quote-argument book-path))))
-         (highlights (ibooks-annot/parse-pdf-highlights parsed-json)))
-    (ibooks-annot/write-highlights-to-note book-title book-note highlights)))
-
-(defun ibooks-annot/parse-pdf-highlights (json-data)
-  "Parse `JSON-DATA' and return a list of highlight."
-  (let ((highlights '()))
+         (highlights '())
+         (json-object-type 'hash-table))
     (with-temp-buffer
-      (let ((json-object-type 'hash-table))
-        (mapc (lambda (entry)
-                (setq highlights (cons (ibooks-annot/format-highlight entry) highlights)))
-              (json-read-from-string json-data)))
-      (nreverse highlights))))
+      (mapc (lambda (entry)
+              (setq highlights (cons (ibooks-annot/format-pdf-highlight entry) highlights)))
+            (json-read-from-string parsed-json))
+      (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
+      (dolist (highlight (nreverse highlights))
+        (insert highlight))
+      (ibooks-annot/write-to-note book-title book-note))))
 
-(defun ibooks-annot/format-highlight (entry)
+(defun ibooks-annot/format-pdf-highlight (entry)
   "Format a single highlight `ENTRY'."
   (let ((color (ibooks-annot/get-emphasis-char (gethash "color" entry)))
         (text (gethash "text" entry))
@@ -257,14 +255,6 @@ If neither condition is met, an empty string is returned."
     (if contents
         (format "%s%s%s\n# %s\n" color text color contents)
       (format "%s%s%s\n" color text color))))
-
-(defun ibooks-annot/write-highlights-to-note (book-title book-note highlights)
-  "Write `Highlight' to `BOOK-NOTE' for the given `BOOK-TITLE'."
-  (with-temp-buffer
-    (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
-    (dolist (highlight highlights)
-      (insert highlight))
-    (ibooks-annot/write-to-note book-title book-note)))
 
 (defun ibooks-annot/write-to-note (book-title book-note)
   "Write the buffer content to `BOOK-NOTE'.
@@ -279,7 +269,7 @@ Create a new note with `BOOK-TITLE' if needed."
       (insert text))))
 
 ;;;###autoload
-(defun ibooks-annot/extract-highlights-to-note ()
+(defun ibooks-annot/extract-annotations-to-note ()
   "Choose a book and save its annotations to NOTE-PATH."
   (interactive)
   (let* ((book-id (ibooks-annot/choose-book))
@@ -287,9 +277,9 @@ Create a new note with `BOOK-TITLE' if needed."
          (book-note (ibooks-annot/book-note-exist-p book-title))
          (book-ext (ibooks-annot/get-book-extension book-title)))
     (when book-id
-      (cond ((string= book-ext "epub") (ibooks-annot/extract-epub-highlights book-id book-title book-note))
+      (cond ((string= book-ext "epub") (ibooks-annot/extract-epub-annotations book-id book-title book-note))
             ((string= book-ext "pdf") (if pdfannots-script
-                                          (ibooks-annot/extract-pdf-highlights book-title book-note)
+                                          (ibooks-annot/extract-pdf-annotations book-title book-note)
                                         (message "Install pdfannots first!")))))))
 
 (provide 'ibooks-annot)
