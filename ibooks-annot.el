@@ -132,7 +132,7 @@ check the output json file to find color value.")
   "Get the number of annotations for a book with BOOK-ID."
   (length (ibooks-annot/get-book-highlights book-id)))
 
-(defun ibooks-annot/code-to-symbol (code)
+(defun ibooks-annot/org-emphasis-char (code)
   (cond
    ((= code 0) "_")
    ((= code 1) "~")
@@ -141,12 +141,8 @@ check the output json file to find color value.")
    ((= code 4) "*")
    (t "")))
 
-(defun ibooks-annot/color-to-symbol (color)
-  (let ((code (car (rassoc color ibooks-annot/highlights-color-list))))
-    (ibooks-annot/code-to-symbol code)))
-
-(defun ibooks-annot/highlights-color (colorcode)
-    "Return a character corresponding to `COLORCODE'.
+(defun ibooks-annot/get-emphasis-char (num-or-string)
+  "Return a character corresponding to `COLORCODE'.
 
 If COLORCODE  is a number (1-4), the function returns the character
 '~', '=', '/', or '*'.
@@ -155,9 +151,10 @@ If COLORCODE is a color string, the function returns the
    corresponding character from the `custom-highlights-list'.
 
 If neither condition is met, an empty string is returned."
-  (if (numberp colorcode)
-      (ibooks-annot/code-to-symbol colorcode)
-    (ibooks-annot/color-to-symbol colorcode)))
+  (let* ((code (if (numberp num-or-string)
+                   num-or-string
+                 (car (rassoc num-or-string ibooks-annot/highlights-color-list)))))
+    (ibooks-annot/org-emphasis-char code)))
 
 (defun ibooks-annot/book-note-exist-p (title)
   "Check if a book note with TITLE exists in the denote directory."
@@ -225,7 +222,7 @@ If neither condition is met, an empty string is returned."
       (when highlights
         (insert (format "* %s\n" ibooks-annot/book-note-highlights-heading))
         (dolist (annot highlights)
-          (let ((symbol (ibooks-annot/highlights-color (nth 4 annot)))
+          (let ((symbol (ibooks-annot/get-emphasis-char (nth 4 annot)))
                 (highlight (cadr annot))
                 (comment (caddr annot)))
             (insert (format "%s%s%s\n" symbol highlight symbol))
@@ -247,14 +244,13 @@ If neither condition is met, an empty string is returned."
     (with-temp-buffer
       (let ((json-object-type 'hash-table))
         (mapc (lambda (entry)
-                (message "%s" (cons (ibooks-annot/format-highlight entry) highlights))
                 (setq highlights (cons (ibooks-annot/format-highlight entry) highlights)))
               (json-read-from-string json-data)))
       (nreverse highlights))))
 
 (defun ibooks-annot/format-highlight (entry)
   "Format a single highlight `ENTRY'."
-  (let ((color (ibooks-annot/highlights-color (gethash "color" entry)))
+  (let ((color (ibooks-annot/get-emphasis-char (gethash "color" entry)))
         (text (gethash "text" entry))
         (contents (gethash "contents" entry)))
     (if contents
