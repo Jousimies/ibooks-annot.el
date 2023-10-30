@@ -230,7 +230,7 @@ If neither condition is met, an empty string is returned."
                 (comment (caddr annot)))
             (insert (format "%s%s%s\n" symbol highlight symbol))
             (when comment
-              (insert (format "# %s%s%s\n" symbol comment symbol)))))
+              (insert (format "# %s\n" comment)))))
         (ibooks-annot/write-to-note book-title book-note)))))
 
 (defun ibooks-annot/extract-pdf-highlights (book-title book-note)
