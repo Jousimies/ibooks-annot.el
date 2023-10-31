@@ -32,6 +32,10 @@
 (require 'org nil t)
 (require 'json nil t)
 
+(defgroup ibooks-annot nil
+  "Customization options for ibooks annotation."
+  :group 'tools)
+
 (defun ibooks-db/get-sqlite (directory sub-dir pattern)
   "Get a list of database in SUB-DIR of DIRECTORY matching the PATTERN."
   (let ((file-names '()))
@@ -64,20 +68,30 @@
 (defvar ibooks-annot/book-alist nil
   "A list to store iBooks name and ID extract from database.")
 
-(defvar ibooks-annot/books-location (expand-file-name "~/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/")
-  "The location of iBooks documents system.")
+(defcustom ibooks-annot/books-location (expand-file-name "~/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/")
+  "The location of iBooks documents system."
+  :group 'ibooks-annot
+  :type 'string)
 
-(defvar ibooks-annot/book-note-highlights-heading "Annotations Extracted"
-  "The heading used for extracted annotations book note.")
+(defcustom ibooks-annot/book-note-highlights-heading "Annotations Extracted"
+  "The heading used for extracted annotations book note."
+  :group 'ibooks-annot
+  :type 'string)
 
-(defvar ibooks-annot/book-note-directory "~/org"
-  "The directory where book note are stored.")
+(defcustom ibooks-annot/book-note-directory "~/org"
+  "The directory where book note are stored."
+  :group 'ibooks-annot
+  :type 'string)
 
-(defvar pdfannots-script nil
-  "A variable to store pdfannot shell command, if applicable.")
+(defcustom pdfannots-script nil
+  "A variable to store pdfannot shell command, if applicable."
+  :group 'ibooks-annot
+  :type 'string)
 
-(defvar ibooks-annot/python-command "/usr/bin/python3"
-  "The path to the Python 3 executable on system.")
+(defcustom ibooks-annot/python-command "/usr/bin/python3"
+  "The path to the Python 3 executable on system."
+  :group 'ibooks-annot
+  :type 'string)
 
 (defvar ibooks-annot/BKLibrary-DB (ibooks-db/get-sqlite IBOOKS-DATA "BKLibrary/" "BKLibrary.*\\.sqlite$")
   "The database for iBooks library information.")
@@ -99,7 +113,9 @@ Use the associated numbers for different purposes:
 
 The colors were extract from pdf by pdfannots. Please adjust it according to you content.
 Execute shell command `python3 pdfannot.py -f json xxx.pdf',
-check the output json file to find color value.")
+check the output json file to find color value."
+  :group 'ibooks-annot
+  :type 'alist)
 
 (defun ibooks-db/open (dbname)
   (or (gethash dbname *ibooks-db*)
