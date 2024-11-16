@@ -99,7 +99,7 @@
 (defvar ibooks-annot/AEAnnotation-DB (ibooks-db/get-sqlite IBOOKS-DATA "AEAnnotation/" "AEAnnotation.*\\.sqlite$")
   "The database for iBooks annotations information.")
 
-(defvar ibooks-annot/highlights-color-list '((0 . "#eb2813")
+(defcustom ibooks-annot/highlights-color-list '((0 . "#eb2813")
                                              (1 . "#7cc867")
                                              (2 . "#69aff0")
                                              (3 . "#f9cd59")
@@ -115,7 +115,7 @@ The colors were extract from pdf by pdfannots. Please adjust it according to you
 Execute shell command `python3 pdfannot.py -f json xxx.pdf',
 check the output json file to find color value."
   :group 'ibooks-annot
-  :type 'alist)
+  :type '(alist :key-type integer :value-type string))
 
 (defun ibooks-db/open (dbname)
   (or (gethash dbname *ibooks-db*)
@@ -297,6 +297,13 @@ Create a new note with `BOOK-TITLE' if needed."
             ((string= book-ext "pdf") (if pdfannots-script
                                           (ibooks-annot/extract-pdf-annotations book-title book-note)
                                         (message "Install pdfannots first!")))))))
+
+;;;###autoload
+(defun ibooks-annot/open-book-with-ibooks ()
+  (interactive)
+  (let* ((book-id (ibooks-annot/choose-book)))
+	(shell-command-to-string (concat "open -a " "\"iBooks\" " "ibooks://assetID/" book-id))))
+
 
 (provide 'ibooks-annot)
 
